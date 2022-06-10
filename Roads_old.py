@@ -20,7 +20,6 @@ if not os.path.exists(newpath):# ha nincs ilyen mappa, akkor készít egyet
 #font
 pygame.font.init()
 myfont = pygame.font.SysFont('Calibri', 30)
-__version__ = '1.0.0'
 
 #colors:
 red = (255, 0, 0)
@@ -30,6 +29,7 @@ cian = (0, 255, 255)
 yellow = (255, 255, 0)
 pink = (255, 0, 255)
 kiwi = (161, 245, 66)
+grey = (241, 241, 241)
 
 kivVonal = kiwi
 norVonal = blue
@@ -42,7 +42,7 @@ normal = -50, -125
 small = -1000, -100
 half = -700, -100
 
-monitorMode = half
+monitorMode = normal
 
 def elementInDict(element, dict):
     keys = []
@@ -226,7 +226,41 @@ class Pont:
         self.kapcsolat += newItem.kapcsolat
         pontok[newItem.hely] = self
         del newItem
-        
+
+
+class Button():
+    def __init__(self, x, y, image, size=1):
+        width = image.get_width()
+        height = image.get_height()
+        if type(size) == type(0):
+            self.image = pygame.transform.scale(image, (int(width * size), int(height * size)))
+        elif type(size) == type((0, 0, 0)):
+            imageX, imageY = size
+            self.image = pygame.transform.scale(image, (imageX, imageY))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicked = False
+
+    def draw(self, surface):
+        action = False
+        #get mouse position
+        pos = pygame.mouse.get_pos()
+
+        #check mouseover and clicked conditions
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        #draw button on screen
+        surface.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
+
+
 def load(vonalak):
     tmp = len(vonalak)
     i = 0
@@ -234,6 +268,13 @@ def load(vonalak):
         Pont(vonal[0]).new2(Pont(vonal[1]).hely)
         i += 1
         print('Betöltve: ' + str(i//tmp*100) + '%', end='\r')
+
+def Undo(vonalak):
+    LEN = len(vonalak)
+    if LEN != 0:
+        del vonalak[LEN-1]
+    return vonalak
+
 
 loading = 0
 bestTav = -2
@@ -274,7 +315,18 @@ def main(dict = {}, v = []):
     del tmpX
     del tmpY
 
+    window_icon = pygame.image.load('arrow.png')
+    image_undo = pygame.image.load('undo.png')#.convert_alpha()
+    image_save = pygame.image.load('save.png')
+
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
+    pygame.display.set_caption('Roads')
+    pygame.display.set_icon(window_icon)
+    tray_y = 50
+    icon_size = (35, 35)
+    button_undo = Button(20, 10, image_undo, icon_size)
+    button_save = Button(70, 10, image_save, icon_size)
+
     egerAllapot = ""
     vonalak = v[:]
     infosDict = dict
@@ -282,9 +334,9 @@ def main(dict = {}, v = []):
     TERV = False
     global bestTav
     global bestVonal
+
     if v != []:
         load(vonalak)
-
 
     while True:
         global bestVonal
@@ -308,6 +360,8 @@ def main(dict = {}, v = []):
             
         ora.tick(30)
         esemeny = pygame.event.get()
+        mousePos = pygame.mouse.get_pos()
+        mousePosX, mousePosY = mousePos
 
         shiftDown(esemeny)
         if eventInList(pygame.QUIT, esemeny):
@@ -316,10 +370,10 @@ def main(dict = {}, v = []):
             break
         elif eventInList(pygame.KEYDOWN, esemeny):
             key = es.dict['key']
-            if key ==  27:# Az Escape billentyű
+            if key == 27:# Az Escape billentyű
                 saveProjekt(infosDict, vonalak)
                 break
-            elif key ==  ord('s'):# Az 's' gomb megnyomásakor
+            elif key == ord('s'):# Az 's' gomb megnyomásakor
                 pygame.quit()
                 mappaTartalma()
                 saveProjekt(infosDict, vonalak, True)
@@ -328,18 +382,19 @@ def main(dict = {}, v = []):
                 TERV = True
                 egerAllapot = ''
         elif eventInList(pygame.MOUSEBUTTONDOWN, esemeny):
-            if egerAllapot == 'lent':
-                vegHely = es.dict['pos']
-                egerAllapot = "fent"
-            else:
-                kezdHely = es.dict['pos']
-                egerAllapot = "lent"
-                if TERV and bestTav == -1:
-                    TERV = False
-                    egerAllapot = ''
-                    bestVonal = []
-                    kivalasztott = []
-                    bestTav = -2
+            if mousePosY > tray_y:
+                if egerAllapot == 'lent':
+                    vegHely = es.dict['pos']
+                    egerAllapot = "fent"
+                else:
+                    kezdHely = es.dict['pos']
+                    egerAllapot = "lent"
+                    if TERV and bestTav == -1:
+                        TERV = False
+                        egerAllapot = ''
+                        bestVonal = []
+                        kivalasztott = []
+                        bestTav = -2
         if TERV:
             tmp = False
             if egerAllapot == 'lent':
@@ -436,6 +491,15 @@ def main(dict = {}, v = []):
                 vonalak.append([kezdHely,poz])
             egerAllapot = ''
             Pont(kezdHely).new2(Pont(vegHely).hely)
+        
+        
+        pygame.draw.rect(fo_felulet, grey, pygame.Rect(0, 0, felulet_meret_x, tray_y))
+        if button_undo.draw(fo_felulet):
+            vonalak = Undo(vonalak)
+        if button_save.draw(fo_felulet):
+            pygame.quit()
+            mappaTartalma()
+            saveProjekt(infosDict, vonalak, True)
         pygame.display.flip()
     pygame.quit()
 
