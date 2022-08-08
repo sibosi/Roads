@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from fileOpen import *
 import pathlib
 from time import sleep
 import pygame
@@ -9,7 +10,7 @@ import ctypes#A képernyő nagyságát adja meg
 ora = pygame.time.Clock()
 konyvtar = 'Roads tervek'
 shift = False
-OpenedFile = None
+openedFileName = None
 
 #file inportálása:
 path = str(str(pathlib.Path(__file__).parent.resolve())+('\{0}'.format(konyvtar)))
@@ -17,10 +18,16 @@ newpath = r''+ path# megadja az aktuális mappa elérési útját
 if not os.path.exists(newpath):# ha nincs ilyen mappa, akkor készít egyet
     os.makedirs(newpath)
 
+
+#settings
+zoom = 2
+talca_size = 100
+vonal_size = int(1+zoom*0.5)
+kor_size = int(9+zoom*1.5)
+
 #font
 pygame.font.init()
 myfont = pygame.font.SysFont('Calibri', 30)
-__version__ = '1.0.0'
 
 #colors:
 red = (255, 0, 0)
@@ -30,6 +37,7 @@ cian = (0, 255, 255)
 yellow = (255, 255, 0)
 pink = (255, 0, 255)
 kiwi = (161, 245, 66)
+grey = (241, 241, 241)
 
 kivVonal = kiwi
 norVonal = blue
@@ -42,7 +50,7 @@ normal = -50, -125
 small = -1000, -100
 half = -700, -100
 
-monitorMode = half
+monitorMode = normal
 
 def elementInDict(element, dict):
     keys = []
@@ -79,65 +87,10 @@ def makeDict(keys, valuen):
         dict.update({ keys[i] : valuen[i]})
     return dict
 
-def mappaTartalma(path = path):
-    print('A te tervjeid:')
-    names = ['Name']
-    namesValueLen = [0]
-    mappaLista = listTxtFiles(path)#Az aktuális mappában lévő összes elem.
-    
-    #A file-ok neveinek a hosszúságát határozzuk meg ([0])
-    for name in mappaLista:
-        if len(name) > namesValueLen[0]:
-            namesValueLen[0] = len(name)
-
-    #Összeszedjük az összes nevet és az értékének a hosszát
-    for file in mappaLista:
-        file = open(os.path.expanduser(os.path.join(path, file)), 'r')
-        infos = file.read().split('\n')[:-1]
-        for info in infos:
-            info = info.split(':')
-            if info[0] not in names:
-                names.append(info[0])
-                namesValueLen.append(len(info[1]))
-            elif namesValueLen[names.index(info[0])] < len(info[1]):
-                namesValueLen[names.index(info[0])] = len(info[1])
-        file.close()
-    
-    #Fejléc elkészítés
-    infosD = makeDict(names, namesValueLen)
-    i = 0
-    for name in names:
-        j = infosD[name] - len(name)
-        print(name + ' '* (j + 3), end = '')
-        i += 1
-    print()
-
-    TMP = names, namesValueLen
-    for elem in mappaLista:
-        names, namesValueLen = TMP
-        file = open(os.path.expanduser(os.path.join(path, elem)), 'r')
-        infos = file.read().split('\n')[:-1]
-        print(elem + (namesValueLen[0] - len(elem)) * ' ', end='   ')
-        names = names[1:]
-        namesValueLen = namesValueLen[1:]
-        for name in names:
-            tmp = True
-            for info in infos:
-                info = info.split(':')
-                if info[0] == name:
-                    print(info[1] + (infosD[name] - len(info[1])) * '-', end='   ')
-                    tmp = False
-            if tmp:
-                print(infosD[name] * '*', end='   ')
-
-        print()
-    print()
-
 def tavolsag(a,b):
     x1, y1 = a
     x2, y2 = b
     tav = sqrt((x2-x1)**2+(y2-y1)**2)
-    print(f'{a} {b} = {tav}')
     return tav
 
 def eventInList(event, list):
@@ -172,12 +125,7 @@ def shiftDown(list):
                 shift = False
 
 def saveProjekt(infosDict, vonalak, name = False):
-    if name:
-        TMP = input('Milyen névre mentenéd a tervet: ')
-        if TMP == '':
-            TMP = OpenedFile
-        file = open(os.path.expanduser(os.path.join(path, TMP +'.txt')), 'w')
-    else:
+    if not name:
         file = open(os.path.expanduser(os.path.join(path, 'elozoRajz' + '.txt')), 'w')
     #os.path.expanduser(os.path.join("~/Desktop",boyka + ".txt"))
     tmp = ''
@@ -195,9 +143,15 @@ def saveProjekt(infosDict, vonalak, name = False):
         infos = infos + key + ':' + value + '\n'
 
     tmp = infos + tmp
-    file.write(tmp)
+    if not name:
+        file.write(tmp)
     file = open(os.path.expanduser(os.path.join(path, 'e' + '.txt')), 'w')
     file.write(tmp)
+    file.close()
+
+    if name:
+        saveFile(path, tmp, openedFileName)
+
 
 pontok = []
 ids = {}
@@ -226,7 +180,41 @@ class Pont:
         self.kapcsolat += newItem.kapcsolat
         pontok[newItem.hely] = self
         del newItem
-        
+
+
+class Button():
+    def __init__(self, x, y, image, size=1):
+        width = image.get_width()
+        height = image.get_height()
+        if type(size) == type(0):
+            self.image = pygame.transform.scale(image, (int(width * size), int(height * size)))
+        elif type(size) == type((0, 0, 0)):
+            imageX, imageY = size
+            self.image = pygame.transform.scale(image, (imageX, imageY))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicked = False
+
+    def draw(self, surface):
+        action = False
+        #get mouse position
+        pos = pygame.mouse.get_pos()
+
+        #check mouseover and clicked conditions
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        #draw button on screen
+        surface.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
+
+
 def load(vonalak):
     tmp = len(vonalak)
     i = 0
@@ -234,6 +222,13 @@ def load(vonalak):
         Pont(vonal[0]).new2(Pont(vonal[1]).hely)
         i += 1
         print('Betöltve: ' + str(i//tmp*100) + '%', end='\r')
+
+def Undo(vonalak):
+    LEN = len(vonalak)
+    if LEN != 0:
+        del vonalak[LEN-1]
+    return vonalak
+
 
 loading = 0
 bestTav = -2
@@ -262,10 +257,9 @@ def plan(poz1, poz2, tav=0, megtettHelyek = []):
                 k = pontok[k]
                 if k not in megtettHelyek:
                     tav += tavolsag(item.poz, k.poz)
-                    print(tav)
                     plan(k.poz, poz2, tav, megtettHelyek[:])
 
-def main(dict = {}, v = []):
+def main(dict = {}, v = [], openedFileName = None):
     pygame.init()
     X1, Y1 = monitorSize()
     tmpX, tmpY = monitorMode
@@ -274,7 +268,25 @@ def main(dict = {}, v = []):
     del tmpX
     del tmpY
 
+    window_icon = pygame.image.load('arrow.png')
+    image_undo = pygame.image.load('undo.png')#.convert_alpha()
+    image_save = pygame.image.load('save.png')
+    image_open = pygame.image.load('explorer.png')
+
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
+    if openedFileName == None:
+        pygame.display.set_caption('Roads')
+    else:
+        pygame.display.set_caption('Roads - ' + openedFileName)
+    pygame.display.set_icon(window_icon)
+    icon_size = (talca_size-15, talca_size-15)
+    terkoz = 30#20
+    button_open = Button(0*talca_size+terkoz, 10, image_open, icon_size)
+    button_undo = Button(1*talca_size+terkoz, 10, image_undo, icon_size)
+    button_save = Button(2*talca_size+terkoz, 10, image_save, icon_size)
+    
+    
+
     egerAllapot = ""
     vonalak = v[:]
     infosDict = dict
@@ -282,100 +294,97 @@ def main(dict = {}, v = []):
     TERV = False
     global bestTav
     global bestVonal
+
     if v != []:
         load(vonalak)
-
 
     while True:
         global bestVonal
         fo_felulet.fill((63,152,107))
-        pygame.draw.line(fo_felulet,(0,0,255),(100,100),(200,200),1)
+        pygame.draw.line(fo_felulet, (0,0,255), (100,100), (200,200), vonal_size)
 
         for vonal in vonalak:
             if vonal[0] in kivalasztott and vonal[1] in kivalasztott:
-                pygame.draw.line(fo_felulet,kivVonal,vonal[0],vonal[1],1)
+                pygame.draw.line(fo_felulet, kivVonal, vonal[0], vonal[1], vonal_size)
             else:
-                pygame.draw.line(fo_felulet,norVonal,vonal[0],vonal[1],1)
+                pygame.draw.line(fo_felulet, norVonal, vonal[0], vonal[1], vonal_size)
             if vonal[0] in kivalasztott:
-                pygame.draw.circle(fo_felulet,kivPont,vonal[0],10)
+                pygame.draw.circle(fo_felulet, kivPont, vonal[0], kor_size)
             else:
-                pygame.draw.circle(fo_felulet,norPont,vonal[0],10)
+                pygame.draw.circle(fo_felulet, norPont, vonal[0], kor_size)
 
             if vonal[1] in kivalasztott:
-                pygame.draw.circle(fo_felulet,kivPont,vonal[1],10)
+                pygame.draw.circle(fo_felulet, kivPont, vonal[1], kor_size)
             else:
-                pygame.draw.circle(fo_felulet,norPont,vonal[1],10)
+                pygame.draw.circle(fo_felulet, norPont, vonal[1], kor_size)
             
         ora.tick(30)
         esemeny = pygame.event.get()
+        mousePos = pygame.mouse.get_pos()
+        mousePosX, mousePosY = mousePos
 
         shiftDown(esemeny)
         if eventInList(pygame.QUIT, esemeny):
             pygame.quit()
             saveProjekt(infosDict, vonalak)
-            break
+            exit() 
         elif eventInList(pygame.KEYDOWN, esemeny):
             key = es.dict['key']
-            if key ==  27:# Az Escape billentyű
+            if key == 27:# Az Escape billentyű
                 saveProjekt(infosDict, vonalak)
                 break
-            elif key ==  ord('s'):# Az 's' gomb megnyomásakor
+            elif key == ord('s'):# Az 's' gomb megnyomásakor
                 pygame.quit()
-                mappaTartalma()
                 saveProjekt(infosDict, vonalak, True)
                 break
             elif key == ord('p'):
                 TERV = True
                 egerAllapot = ''
         elif eventInList(pygame.MOUSEBUTTONDOWN, esemeny):
-            if egerAllapot == 'lent':
-                vegHely = es.dict['pos']
-                egerAllapot = "fent"
-            else:
-                kezdHely = es.dict['pos']
-                egerAllapot = "lent"
-                if TERV and bestTav == -1:
-                    TERV = False
-                    egerAllapot = ''
-                    bestVonal = []
-                    kivalasztott = []
-                    bestTav = -2
+            if mousePosY > talca_size:
+                if egerAllapot == 'lent':
+                    vegHely = es.dict['pos']
+                    egerAllapot = "fent"
+                else:
+                    kezdHely = es.dict['pos']
+                    egerAllapot = "lent"
+                    if TERV and bestTav == -1:
+                        TERV = False
+                        egerAllapot = ''
+                        bestVonal = []
+                        kivalasztott = []
+                        bestTav = -2
         if TERV:
             tmp = False
             if egerAllapot == 'lent':
                 for vonal in vonalak:
                     tav = tavolsag(kezdHely,vonal[0])
-                    if tav < 10:
+                    if tav < kor_size:
                         kezdHely = vonal[0]
                         tmp = True
                     tav = tavolsag(kezdHely,vonal[1])
-                    if tav < 10:
+                    if tav < kor_size:
                         kezdHely = vonal[1]
                         tmp = True
                 
                 if kezdHely not in kivalasztott and tmp:
-                    print('UGANDA:', kezdHely)
                     kivalasztott.append(kezdHely)
             elif egerAllapot == 'fent':
                 if bestTav != -1:
-                    print(ids.keys)
                     tmp = False
                     for vonal in vonalak:
                         tav = tavolsag(vegHely, vonal[0])
-                        if tav < 10:
+                        if tav < kor_size:
                             vegHely = vonal[0]
                             tmp = True
                         tav = tavolsag(vegHely, vonal[1])
-                        if tav < 10:
+                        if tav < kor_size:
                             vegHely = vonal[1]
                             tmp = True
                     if tmp:
                         plan(kezdHely, vegHely, megtettHelyek=[])
-                        print('LEN:', len(bestVonal))
                         for j in bestVonal:
-                            print('J:', j.poz)
                             if j.poz not in kivalasztott:
-                                
                                 kivalasztott.append(j.poz)
                         #bestTav = -1
                         print('A legjobb útvonal kiszámítva!')
@@ -385,10 +394,10 @@ def main(dict = {}, v = []):
             #A kattintott helyet igazítja egy meglévő ponthoz
             for vonal in vonalak:
                 tav = tavolsag(kezdHely,vonal[0])
-                if tav < 10:
+                if tav < kor_size:
                     kezdHely = vonal[0]
                 tav = tavolsag(kezdHely,vonal[1])
-                if tav < 10:
+                if tav < kor_size:
                     kezdHely = vonal[1]
                 
             
@@ -414,21 +423,21 @@ def main(dict = {}, v = []):
                 #A még nem lehelyezett végpontot igazítja
                 for vonal in vonalak:
                     tav = tavolsag(poz,vonal[0])
-                    if tav < 10:
+                    if tav < kor_size:
                         poz = vonal[0]
                     tav = tavolsag(poz,vonal[1])
-                    if tav < 10:
+                    if tav < kor_size:
                         poz = vonal[1]
             
-            pygame.draw.line(fo_felulet,(0,0,255),kezdHely,poz,1)
+            pygame.draw.line(fo_felulet,(0,0,255),kezdHely,poz,vonal_size)
         elif egerAllapot == "fent":
             if not shift:
                 for vonal in vonalak:
                     tav = tavolsag(vegHely,vonal[0])
-                    if tav < 10:
+                    if tav < kor_size:
                         vegHely = vonal[0]
                     tav = tavolsag(vegHely,vonal[1])
-                    if tav < 10:
+                    if tav < kor_size:
                         vegHely = vonal[1]
                 vonalak.append([kezdHely,vegHely])
             else:
@@ -436,8 +445,27 @@ def main(dict = {}, v = []):
                 vonalak.append([kezdHely,poz])
             egerAllapot = ''
             Pont(kezdHely).new2(Pont(vegHely).hely)
+        
+        
+        pygame.draw.rect(fo_felulet, grey, pygame.Rect(0, 0, felulet_meret_x, talca_size))
+        if button_undo.draw(fo_felulet):
+            vonalak = Undo(vonalak)
+        if button_save.draw(fo_felulet):
+            saveProjekt(infosDict, vonalak, True)
+        if button_open.draw(fo_felulet):
+            tmp = openFile(path)
+            if tmp == None:
+                main()
+            else:
+                tmp, openedFileName = tmp
+                infosDict, txt = tmp
+                main(infosDict, txt, openedFileName)
+            pygame.quit()
+            main(infosDict, txt)
         pygame.display.flip()
     pygame.quit()
+
+
 
 
 bemutat = '''
@@ -453,40 +481,11 @@ Indításkor (betöltéskor) az "ENTER" megnyomásával üres tervet hozol létr
 de a felsorolt nevekből importálhatsz is.
 '''
 
-v = None
-while v == 'HELP' or v == None:
-    mappaTartalma()
-    print('A segítségért írd be "HELP"!')
-    v = input('Add meg az egyik terv nevét (vagy nyomj entert): ')
-    if v == 'HELP':
-        print(bemutat)
-        input('Nyomj entert!')
-        print('\n')
-if v == '':
+'''tmp = openFile(path)
+if tmp == None:
     main()
 else:
-    OpenedFile = v
-    txt = open(os.path.expanduser(os.path.join(path,v+'.txt')), 'r')
-    txt = txt.read()
-    infos = txt.split('\n')
-    tmp = infos.pop(len(infos)-1).split('/')
-
-    infosDict = {}
-    for element in infos:
-        element = element.split(':')
-        tmpDict = {
-            element[0] : element[1]
-        }
-        infosDict.update(tmpDict)
-
-    txt = []
-    for i in tmp:
-        txt.append(i.split(','))
-    tmp = txt[:]
-    for i in tmp:
-        for j in i:
-            jElozo = j
-            j = j.split(' ')
-            txt[(txt.index(i))][i.index(jElozo)] = ((int(j[0]), int(j[1])))
-    del tmp
-    main(infosDict, txt)
+    tmp, openedFileName = tmp
+    infosDict, txt = tmp
+    main(infosDict, txt, openedFileName)'''
+main()
