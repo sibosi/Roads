@@ -18,39 +18,49 @@ newpath = r''+ path# megadja az aktuális mappa elérési útját
 if not os.path.exists(newpath):# ha nincs ilyen mappa, akkor készít egyet
     os.makedirs(newpath)
 
-
-#settings
-zoom = 2
-talca_size = 100
-vonal_size = int(1+zoom*0.5)
-kor_size = int(9+zoom*1.5)
-
 #font
 pygame.font.init()
 myfont = pygame.font.SysFont('Calibri', 30)
 
 #colors:
-red = (255, 0, 0)
-green = (0, 255, 8)
-blue = (0, 0, 255)
-cian = (0, 255, 255)
-yellow = (255, 255, 0)
-pink = (255, 0, 255)
-kiwi = (161, 245, 66)
-grey = (241, 241, 241)
-
-kivVonal = kiwi
-norVonal = blue
-kivPont = cian
-norPont = red
+class Color():
+    green_grass = (63,152,107)
+    red = (255, 0, 0)
+    green = (0, 255, 8)
+    blue = (0, 0, 255)
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+    cian = (0, 255, 255)
+    yellow = (255, 255, 0)
+    pink = (255, 0, 255)
+    kiwi = (161, 245, 66)
+    grey = (241, 241, 241)
+    wood = (181, 136, 95)
+    light_grey = (148, 160, 179)
 
 #monitorMode:
-big = -20, -100
+big = -20, -125
 normal = -50, -125
-small = -1000, -100
-half = -700, -100
+small = -1000, -125
+half = -700, -125
+
+
+#settings
+zoom = 2
+talca_size = 110
+terkoz = 30#20
+vonal_size = int(1+zoom*0.5)
+kor_size = int(9+zoom*1.5)
+
+kivVonal = Color.kiwi
+norVonal = Color.blue
+kivPont = Color.cian
+norPont = Color.red
+hatter = Color.green_grass
 
 monitorMode = normal
+
+
 
 def elementInDict(element, dict):
     keys = []
@@ -124,7 +134,7 @@ def shiftDown(list):
             if element.dict['key'] == 1073742053 or element.dict['key'] == 1073742049:
                 shift = False
 
-def saveProjekt(infosDict, vonalak, name = False):
+def saveProjekt(infosDict, vonalak, name = False, openedFileName = None):
     if not name:
         file = open(os.path.expanduser(os.path.join(path, 'elozoRajz' + '.txt')), 'w')
     #os.path.expanduser(os.path.join("~/Desktop",boyka + ".txt"))
@@ -183,7 +193,12 @@ class Pont:
 
 
 class Button():
-    def __init__(self, x, y, image, size=1):
+    def __init__(self, x, y, image, felulet_meret, size=1):
+        if x > 0 or x == 0:
+            x = x*talca_size+terkoz
+        elif x < 0:
+            x = felulet_meret - abs(x)*talca_size-terkoz
+        self.x = x
         width = image.get_width()
         height = image.get_height()
         if type(size) == type(0):
@@ -214,6 +229,26 @@ class Button():
 
         return action
 
+AllFejlecBlokk = []
+class FejlecBlokk():
+    def __init__(self, hely1 : int, hely2 : int, color : tuple, atlatszo : int = 128) -> None:
+        self.hely1 = hely1
+        self.hely2 = hely2
+        r, g, b = color
+        self.color = pygame.Color(r, g, b, atlatszo)
+        print(self.color)
+        self.rect = (self.hely1*talca_size+0.75*terkoz, 5, (self.hely2+1)*talca_size, talca_size-7)
+        AllFejlecBlokk.append(self)
+
+    def draw(self, surface):
+        shape_surf = pygame.Surface(pygame.Rect(self.rect).size, pygame.SRCALPHA)
+        pygame.draw.rect(shape_surf, self.color, shape_surf.get_rect(), border_radius=15)
+        surface.blit(shape_surf, self.rect)
+
+def drawAllFejlecBlokk(surface):
+    for item in AllFejlecBlokk:
+        item : FejlecBlokk
+        item.draw(surface)
 
 def load(vonalak):
     tmp = len(vonalak)
@@ -229,6 +264,9 @@ def Undo(vonalak):
         del vonalak[LEN-1]
     return vonalak
 
+def event_settings(surface : pygame.Surface, button : Button, y : int):
+    rect = pygame.Rect(button.x, y, 30, 80)
+    pygame.draw.rect(surface, Color.light_grey, rect)
 
 loading = 0
 bestTav = -2
@@ -272,6 +310,8 @@ def main(dict = {}, v = [], openedFileName = None):
     image_undo = pygame.image.load('undo.png')#.convert_alpha()
     image_save = pygame.image.load('save.png')
     image_open = pygame.image.load('explorer.png')
+    image_settings = pygame.image.load('settings.png')
+    mode_setings = False
 
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
     if openedFileName == None:
@@ -280,12 +320,12 @@ def main(dict = {}, v = [], openedFileName = None):
         pygame.display.set_caption('Roads - ' + openedFileName)
     pygame.display.set_icon(window_icon)
     icon_size = (talca_size-15, talca_size-15)
-    terkoz = 30#20
-    button_open = Button(0*talca_size+terkoz, 10, image_open, icon_size)
-    button_undo = Button(1*talca_size+terkoz, 10, image_undo, icon_size)
-    button_save = Button(2*talca_size+terkoz, 10, image_save, icon_size)
-    
-    
+    button_open = Button(0, 10, image_open, felulet_meret_x, icon_size)
+    button_undo = Button(1, 10, image_undo, felulet_meret_x, icon_size)
+    button_save = Button(2, 10, image_save, felulet_meret_x, icon_size)
+    button_settings = Button(-1, 10, image_settings, felulet_meret_x, icon_size)
+
+    FejlecBlokk(0, 2, Color.wood)
 
     egerAllapot = ""
     vonalak = v[:]
@@ -300,7 +340,7 @@ def main(dict = {}, v = [], openedFileName = None):
 
     while True:
         global bestVonal
-        fo_felulet.fill((63,152,107))
+        fo_felulet.fill(hatter)
         pygame.draw.line(fo_felulet, (0,0,255), (100,100), (200,200), vonal_size)
 
         for vonal in vonalak:
@@ -446,12 +486,12 @@ def main(dict = {}, v = [], openedFileName = None):
             egerAllapot = ''
             Pont(kezdHely).new2(Pont(vegHely).hely)
         
-        
-        pygame.draw.rect(fo_felulet, grey, pygame.Rect(0, 0, felulet_meret_x, talca_size))
+        pygame.draw.rect(fo_felulet, Color.grey, pygame.Rect(0, 0, felulet_meret_x, talca_size))
+        drawAllFejlecBlokk(fo_felulet)
         if button_undo.draw(fo_felulet):
             vonalak = Undo(vonalak)
         if button_save.draw(fo_felulet):
-            saveProjekt(infosDict, vonalak, True)
+            saveProjekt(infosDict, vonalak, True, openedFileName)
         if button_open.draw(fo_felulet):
             tmp = openFile(path)
             if tmp == None:
@@ -462,6 +502,10 @@ def main(dict = {}, v = [], openedFileName = None):
                 main(infosDict, txt, openedFileName)
             pygame.quit()
             main(infosDict, txt)
+        if button_settings.draw(fo_felulet):
+            mode_setings = not mode_setings
+        if mode_setings:
+            event_settings(fo_felulet, button_settings, talca_size)
         pygame.display.flip()
     pygame.quit()
 
