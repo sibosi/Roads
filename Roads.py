@@ -18,6 +18,9 @@ newpath = r''+ path# megadja az aktuális mappa elérési útját
 if not os.path.exists(newpath):# ha nincs ilyen mappa, akkor készít egyet
     os.makedirs(newpath)
 
+#actual path
+actual_path = str(pathlib.Path(__file__).parent.resolve()) + '\\'
+
 #font
 pygame.font.init()
 myfont = pygame.font.SysFont('Calibri', 30)
@@ -44,10 +47,11 @@ normal = -50, -125
 small = -1000, -125
 half = -700, -125
 
+monitorMode = normal
 
 #settings
 zoom = 2
-talca_size = 110
+talca_size = 110#110
 terkoz = 30#20
 vonal_size = int(1+zoom*0.5)
 kor_size = int(9+zoom*1.5)
@@ -57,9 +61,6 @@ norVonal = Color.blue
 kivPont = Color.cian
 norPont = Color.red
 hatter = Color.green_grass
-
-monitorMode = normal
-
 
 
 def elementInDict(element, dict):
@@ -160,7 +161,10 @@ def saveProjekt(infosDict, vonalak, name = False, openedFileName = None):
     file.close()
 
     if name:
+        print('SAVE FILE def START')
+        print(path, tmp, openedFileName)
         saveFile(path, tmp, openedFileName)
+        print('SAVE FILE def START')
 
 
 pontok = []
@@ -265,8 +269,8 @@ def Undo(vonalak):
     return vonalak
 
 def event_settings(surface : pygame.Surface, button : Button, y : int):
-    rect = pygame.Rect(button.x, y, 30, 80)
-    pygame.draw.rect(surface, Color.light_grey, rect)
+    rect = pygame.Rect(button.x-10, y, 160, 80)
+    pygame.draw.rect(surface, Color.light_grey, rect, border_radius=15)
 
 loading = 0
 bestTav = -2
@@ -306,11 +310,11 @@ def main(dict = {}, v = [], openedFileName = None):
     del tmpX
     del tmpY
 
-    window_icon = pygame.image.load('arrow.png')
-    image_undo = pygame.image.load('undo.png')#.convert_alpha()
-    image_save = pygame.image.load('save.png')
-    image_open = pygame.image.load('explorer.png')
-    image_settings = pygame.image.load('settings.png')
+    window_icon = pygame.image.load(actual_path + 'arrow.png')
+    image_undo = pygame.image.load(actual_path + 'undo.png')#.convert_alpha()
+    image_save = pygame.image.load(actual_path + 'save.png')
+    image_open = pygame.image.load(actual_path + 'explorer.png')
+    image_settings = pygame.image.load(actual_path + 'settings.png')
     mode_setings = False
 
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
@@ -491,7 +495,10 @@ def main(dict = {}, v = [], openedFileName = None):
         if button_undo.draw(fo_felulet):
             vonalak = Undo(vonalak)
         if button_save.draw(fo_felulet):
+            print('SAVE Start')
+            print(infosDict, vonalak, True, openedFileName)
             saveProjekt(infosDict, vonalak, True, openedFileName)
+            print('SAVE End')
         if button_open.draw(fo_felulet):
             tmp = openFile(path)
             if tmp == None:

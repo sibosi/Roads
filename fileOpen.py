@@ -1,15 +1,28 @@
+import pathlib
 from tkinter import *
 from tkinter import filedialog
 from ctypes import windll
 import tkinter
+
+#actual path
+path = str(pathlib.Path(__file__).parent.resolve())
+
 windll.shcore.SetProcessDpiAwareness(1)
 root = tkinter.Tk()
-photo = tkinter.PhotoImage(file = 'arrow.png')
+icon_path = path + '\\arrow.png'
+photo = tkinter.PhotoImage(file = icon_path)
+#C:\\Users\\sibos\\Documents\\GitHub\\Roads\\arrow.png
+#file = path + 'arrow.png'
 root.wm_iconphoto(False, photo)
 root.withdraw()
 
 
 def saveFile(path : str, fileText : str, defaultName = None):
+    print('DEF 1')
+    path = 'C:\\Users\\sibos\\Documents\\GitHub\\Roads\\Roads tervek'
+    fileText = 'log'
+    defaultName = None
+    print('DEF 1.5')
     file = filedialog.asksaveasfile(initialdir=path,
                                     initialfile=defaultName,
                                     defaultextension='.txt',
@@ -18,13 +31,17 @@ def saveFile(path : str, fileText : str, defaultName = None):
                                         ("CSV file", ".csv"),
                                         ("All files", ".*"),
                                     ])
+    print('DEF 2')
     filetext = str(fileText)
+    print('DEF 3')
     #filetext = input("Enter some text I guess: ") //use this if you want to use console window
     try:
         file.write(filetext)
         file.close()
+        print('DEF 4')
     except:
         pass
+        print('DEF 5')
 
 
 def openOldFile(path, v):
