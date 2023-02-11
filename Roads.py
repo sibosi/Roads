@@ -163,7 +163,7 @@ def saveProjekt(infosDict, vonalak, name = False, openedFileName = None):
     if name:
         print('SAVE FILE def START')
         print(path, tmp, openedFileName)
-        saveFile(path, tmp, openedFileName)
+        saveFile(r'' + path, tmp)
         print('SAVE FILE def START')
 
 

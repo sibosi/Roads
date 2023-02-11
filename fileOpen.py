@@ -19,7 +19,7 @@ root.withdraw()
 
 def saveFile(path : str, fileText : str, defaultName = None):
     print('DEF 1')
-    path = 'C:\\Users\\sibos\\Documents\\GitHub\\Roads\\Roads tervek'
+    path = r'C:\\Users\\sibos\\Documents\\GitHub\\Roads\\Roads tervek'
     fileText = 'log'
     defaultName = None
     print('DEF 1.5')
