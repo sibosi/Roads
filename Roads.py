@@ -7,6 +7,9 @@ import pygame
 from math import sqrt
 import ctypes#A képernyő nagyságát adja meg
 
+import version_checker
+
+
 ora = pygame.time.Clock()
 konyvtar = 'Roads tervek'
 shift = False
@@ -161,10 +164,7 @@ def saveProjekt(infosDict, vonalak, name = False, openedFileName = None):
     file.close()
 
     if name:
-        print('SAVE FILE def START')
-        print(path, tmp, openedFileName)
         saveFile(r'' + path, tmp)
-        print('SAVE FILE def START')
 
 
 pontok = []
@@ -495,10 +495,7 @@ def main(dict = {}, v = [], openedFileName = None):
         if button_undo.draw(fo_felulet):
             vonalak = Undo(vonalak)
         if button_save.draw(fo_felulet):
-            print('SAVE Start')
-            print(infosDict, vonalak, True, openedFileName)
             saveProjekt(infosDict, vonalak, True, openedFileName)
-            print('SAVE End')
         if button_open.draw(fo_felulet):
             tmp = openFile(path)
             if tmp == None:
