@@ -1,12 +1,11 @@
-from settings import *
 from projekt_manager import *
 
 loading = 0
 bestTav = -2
 bestVonal = []
-def plan(poz1, poz2, tav=0, megtettHelyek = [],
+def plan(poz1, poz2, pont_ids, tav=0, megtettHelyek = [],
          loading = loading, bestTav = bestTav, bestVonal = bestVonal):
-    item = pont_ids[poz1]
+    item = pont_ids[poz1]# err
     win = pont_ids[poz2]
 
     if loading == 5:
@@ -26,5 +25,5 @@ def plan(poz1, poz2, tav=0, megtettHelyek = [],
                 k = pontok[k]
                 if k not in megtettHelyek:
                     tav += tavolsag(item.poz, k.poz)
-                    plan(k.poz, poz2, tav, megtettHelyek[:], loading, bestTav, bestVonal)
+                    bestTav, bestVonal = plan(k.poz, poz2, pont_ids, tav, megtettHelyek[:], loading, bestTav, bestVonal)
     return (bestTav, bestVonal)

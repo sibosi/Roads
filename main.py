@@ -11,7 +11,6 @@ from map_writer import *
 from the_algorihm import *
 
 ora = pygame.time.Clock()
-shift = False
 openedFileName = None
 
 pygame.font.init()
@@ -21,10 +20,16 @@ def main(dict = {}, v = [], openedFileName = None):
     pygame.init()
     X1, Y1 = SCREEN_SIZE
     tmpX, tmpY = Default.MONITOR_MODE
+    print(Default.MONITOR_MODE)
     felulet_meret_x = X1 + tmpX
     felulet_meret_y = Y1 + tmpY
     del tmpX
     del tmpY
+
+    print(SCREEN_SIZE)
+    print((felulet_meret_x, felulet_meret_y))
+    print('X1:', X1)
+    print('Y1:', Y1)
 
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
     if openedFileName == None:
@@ -44,10 +49,12 @@ def main(dict = {}, v = [], openedFileName = None):
     vonalak = v[:]
     infosDict = dict
     kivalasztott = []
-    TERV = False
+    PLAN_MODE = False
+    shift = False# Le van-e nyomva a shift
     mode_setings = False
-    '''global bestTav
-    global bestVonal'''
+    bestTav = -2
+    kezdHely = None
+    vegHely = None
 
     if v != []:
         load_vonalak(vonalak)
@@ -76,7 +83,7 @@ def main(dict = {}, v = [], openedFileName = None):
         mousePosX, mousePosY = mousePos
 
         # Gombok kezelése
-        shiftDown(esemenyek)
+        shift = shiftDown(esemenyek, shift)
         for event in esemenyek:
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -93,7 +100,7 @@ def main(dict = {}, v = [], openedFileName = None):
                     saveProjekt(infosDict, vonalak, True)
                     break
                 elif key == ord('p'):
-                    TERV = True
+                    PLAN_MODE = True
                     egerAllapot = ''
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = event.dict['pos']
@@ -104,50 +111,20 @@ def main(dict = {}, v = [], openedFileName = None):
                     else:
                         kezdHely = pos
                         egerAllapot = "lent"
-                        if TERV and bestTav == -1:
-                            TERV = False
+                        if PLAN_MODE and bestTav == -1:
+                            PLAN_MODE = False
                             egerAllapot = ''
                             bestVonal = []
                             kivalasztott = []
                             bestTav = -2
 
             
-        if TERV:
-            tmp = False
-            if egerAllapot == 'lent':
-                for vonal in vonalak:
-                    tav = tavolsag(kezdHely,vonal[0])
-                    if tav < Default.KOR_SIZE:
-                        kezdHely = vonal[0]
-                        tmp = True
-                    tav = tavolsag(kezdHely,vonal[1])
-                    if tav < Default.KOR_SIZE:
-                        kezdHely = vonal[1]
-                        tmp = True
-                
-                if kezdHely not in kivalasztott and tmp:
-                    kivalasztott.append(kezdHely)
-            elif egerAllapot == 'fent':
-                if bestTav != -1:
-                    tmp = False
-                    for vonal in vonalak:
-                        tav = tavolsag(vegHely, vonal[0])
-                        if tav < Default.KOR_SIZE:
-                            vegHely = vonal[0]
-                            tmp = True
-                        tav = tavolsag(vegHely, vonal[1])
-                        if tav < Default.KOR_SIZE:
-                            vegHely = vonal[1]
-                            tmp = True
-                    if tmp:
-                        bestTav, bestVonal = plan(kezdHely, vegHely, megtettHelyek=[])
-                        for j in bestVonal:
-                            if j.poz not in kivalasztott:
-                                kivalasztott.append(j.poz)
-                        #bestTav = -1
-                        print('A legjobb útvonal kiszámítva!')
-                        print('Tav: ' + str(bestTav))
-                        bestTav = -1
+        if PLAN_MODE:
+            egerAllapot, vonalak, kivalasztott, bestTav, bestVonal, kezdHely, vegHely =\
+                Plan_On_Map(egerAllapot, vonalak, kivalasztott, 
+                            bestTav, kezdHely, vegHely, pont_ids)
+
+        # Ha a vonal rajzolása megkezdődött
         elif egerAllapot == "lent":
             #A kattintott helyet igazítja egy meglévő ponthoz
             for vonal in vonalak:
@@ -188,6 +165,7 @@ def main(dict = {}, v = [], openedFileName = None):
                         poz = vonal[1]
             
             pygame.draw.line(fo_felulet,(0,0,255),kezdHely,poz,Default.VONAL_SIZE)
+        # Ha a vonalat most készítettük el
         elif egerAllapot == "fent":
             if not shift:
                 for vonal in vonalak:
@@ -224,8 +202,6 @@ def main(dict = {}, v = [], openedFileName = None):
                 tmp, openedFileName = tmp
                 infosDict, txt = tmp
                 main(infosDict, txt, openedFileName)
-            pygame.quit()
-            main(infosDict, txt)
 
         if button_settings.draw(fo_felulet):
             mode_setings = not mode_setings

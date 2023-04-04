@@ -44,6 +44,7 @@ class Default():
 
 user32 = ctypes.windll.user32
 SCREEN_SIZE = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+print('SCREEN_SIZE=', SCREEN_SIZE)
 
 window_icon = pygame.image.load(IMAGE_PATH / 'arrow.png')
 image_undo = pygame.image.load(IMAGE_PATH / 'undo.png')#.convert_alpha()
@@ -58,4 +59,3 @@ def tavolsag(a,b):
     bx, by = b
     tav = sqrt((bx-ax)**2+(by-ay)**2)
     return tav
-
