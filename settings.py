@@ -2,6 +2,7 @@ import ctypes
 from math import sqrt
 import pygame
 from path import *
+import screeninfo
 
 PLAN_MODE = False
 
@@ -42,8 +43,9 @@ class Default():
     NOR_PONT = Color.red
     HATTER = Color.green_grass
 
-user32 = ctypes.windll.user32
-SCREEN_SIZE = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+root = screeninfo.get_monitors()
+i = root[0]
+SCREEN_SIZE = i.width, i.height
 print('SCREEN_SIZE=', SCREEN_SIZE)
 
 window_icon = pygame.image.load(IMAGE_PATH / 'arrow.png')
