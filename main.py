@@ -118,24 +118,18 @@ def main(dict = {}, v = [], openedFileName = None):
                             kivalasztott = []
                             bestTav = -2
 
-            
+        # A kattintás igazítása egy meglévő ponthoz
+        
+
         if PLAN_MODE:
             egerAllapot, vonalak, kivalasztott, bestTav, bestVonal, kezdHely, vegHely =\
                 Plan_On_Map(egerAllapot, vonalak, kivalasztott, 
-                            bestTav, kezdHely, vegHely, pont_ids)
+                            bestTav, kezdHely, vegHely)
 
         # Ha a vonal rajzolása megkezdődött
         elif egerAllapot == "lent":
             #A kattintott helyet igazítja egy meglévő ponthoz
-            for vonal in vonalak:
-                tav = tavolsag(kezdHely,vonal[0])
-                if tav < Default.KOR_SIZE:
-                    kezdHely = vonal[0]
-                tav = tavolsag(kezdHely,vonal[1])
-                if tav < Default.KOR_SIZE:
-                    kezdHely = vonal[1]
-                
-            
+            kezdHely, tmp = kord_igazitas(kezdHely, vonalak)
             poz = pygame.mouse.get_pos()
             if shift:
                 x1, y1 = kezdHely
@@ -155,32 +149,19 @@ def main(dict = {}, v = [], openedFileName = None):
                 elif abs(x1 - x2) > abs(y1 - y2):#Az X-en egyenes
                     poz = (x2, y1)
             else:
-                #A még nem lehelyezett végpontot igazítja
-                for vonal in vonalak:
-                    tav = tavolsag(poz,vonal[0])
-                    if tav < Default.KOR_SIZE:
-                        poz = vonal[0]
-                    tav = tavolsag(poz,vonal[1])
-                    if tav < Default.KOR_SIZE:
-                        poz = vonal[1]
+                poz, tmp = kord_igazitas(poz, vonalak)
             
             pygame.draw.line(fo_felulet,(0,0,255),kezdHely,poz,Default.VONAL_SIZE)
         # Ha a vonalat most készítettük el
         elif egerAllapot == "fent":
             if not shift:
-                for vonal in vonalak:
-                    tav = tavolsag(vegHely,vonal[0])
-                    if tav < Default.KOR_SIZE:
-                        vegHely = vonal[0]
-                    tav = tavolsag(vegHely,vonal[1])
-                    if tav < Default.KOR_SIZE:
-                        vegHely = vonal[1]
+                vegHely, tmp = kord_igazitas(vegHely, vonalak)
                 vonalak.append([kezdHely,vegHely])
             else:
                 vegHely = poz
                 vonalak.append([kezdHely,poz])
             egerAllapot = ''
-            Pont(kezdHely).new2(Pont(vegHely).hely)
+            Pont(kezdHely).new2(Pont(vegHely).poz)
         
 
         pygame.draw.rect(fo_felulet, Color.grey, pygame.Rect(0, 0, felulet_meret_x, Default.TALCA_SIZE))

@@ -1,4 +1,3 @@
-import ctypes
 from math import sqrt
 import pygame
 from path import *
@@ -44,9 +43,7 @@ class Default():
     HATTER = Color.green_grass
 
 root = screeninfo.get_monitors()
-i = root[0]
-SCREEN_SIZE = i.width, i.height
-print('SCREEN_SIZE=', SCREEN_SIZE)
+SCREEN_SIZE = root[0].width, root[0].height
 
 window_icon = pygame.image.load(IMAGE_PATH / 'arrow.png')
 image_undo = pygame.image.load(IMAGE_PATH / 'undo.png')#.convert_alpha()
@@ -56,8 +53,8 @@ image_settings = pygame.image.load(IMAGE_PATH / 'settings.png')
 
 
 
-def tavolsag(a,b):
-    ax, ay = a
-    bx, by = b
+def tavolsag(poz_a : float, poz_b : float):
+    ax, ay = poz_a
+    bx, by = poz_b
     tav = sqrt((bx-ax)**2+(by-ay)**2)
     return tav

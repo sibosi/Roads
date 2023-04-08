@@ -14,7 +14,8 @@ def shiftDown(list, shift = None):
                 shift = False
     return shift
 
-def Plan_On_Map(egerAllapot, vonalak, kivalasztott, bestTav, kezdHely, vegHely, pont_ids):
+def Plan_On_Map(egerAllapot, vonalak, kivalasztott, bestTav,
+                kezdHely, vegHely):
     tmp = False
     bestVonal = []
     if egerAllapot == 'lent':
@@ -32,19 +33,14 @@ def Plan_On_Map(egerAllapot, vonalak, kivalasztott, bestTav, kezdHely, vegHely, 
             kivalasztott.append(kezdHely)
     elif egerAllapot == 'fent':
         if bestTav != -1:
-            tmp = False
-            for vonal in vonalak:
-                tav = tavolsag(vegHely, vonal[0])
-                if tav < Default.KOR_SIZE:
-                    vegHely = vonal[0]
-                    tmp = True
-                tav = tavolsag(vegHely, vonal[1])
-                if tav < Default.KOR_SIZE:
-                    vegHely = vonal[1]
-                    tmp = True
+            vegHely, tmp = kord_igazitas(vegHely, vonalak)
             if tmp:
-                bestTav, bestVonal = plan(kezdHely, vegHely, pont_ids, megtettHelyek=[])
+                import datetime
+                TIME = datetime.datetime.now()
+                bestTav, bestVonal = plan(pontok, kezdHely, vegHely)#, pont_ids, megtettHelyek=[]v
+                print(datetime.datetime.now() - TIME)
                 for j in bestVonal:
+                    print(type(bestVonal))
                     if j.poz not in kivalasztott:
                         kivalasztott.append(j.poz)
                 #bestTav = -1

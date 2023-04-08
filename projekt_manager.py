@@ -38,33 +38,37 @@ class Button():
 
         return action
 
+pontok_by_kord = {}
 pontok = []
-pont_ids = {}
 class Pont:
-    def __init__(self, poz):
+    def __init__(self, poz : float):
         x, y = poz
         self.poz = poz
         self.x = x
         self.y = y
-        self.kapcsolat = []
-        self.hely = len(pontok)# Megmondja a listában elfoglalt helyét
-        pontok.append(self)
-        if poz in pont_ids.keys():
-            self.update(pont_ids[poz])
-        pont_ids.update({poz : self})
+        self.kapcsolatok_by_kord = {}
+        self.kapcsolatok = []
+        if self.poz in pontok_by_kord.keys():
+            self.update(pontok_by_kord[self.poz])
+        else:
+            pontok_by_kord[poz] = self
+            pontok.append(self)
 
-    def new(self, hely):
-        self.kapcsolat.append(hely)
+    def new(self, new_poz):
+        new_pont = pontok_by_kord[new_poz]
+        self.kapcsolatok_by_kord[new_poz] = new_pont
+        self.kapcsolatok.append(new_pont)
     
-    def new2(self, hely):
-        new = pontok[hely]
-        self.kapcsolat.append(hely)
-        new.new(self.hely)
+    def new2(self, new_poz):
+        new_pont = pontok_by_kord[new_poz]
+        self.kapcsolatok_by_kord[new_poz] = new_pont
+        new_pont.new(self.poz)
+        self.kapcsolatok.append(new_pont)
     
-    def update(self, newItem):
-        self.kapcsolat += newItem.kapcsolat
-        pontok[newItem.hely] = self
-        del newItem
+    def update(self, new_pont):
+        #new_pont.kapcsolatok_by_kord.update(self.kapcsolatok_by_kord)
+        #pontok_by_kord[newItem.hely] = self
+        self = new_pont
 
 AllFejlecBlokk = []
 class FejlecBlokk():
@@ -87,12 +91,23 @@ def drawAllFejlecBlokk(surface):
         item : FejlecBlokk
         item.draw(surface)
 
-
-
 def load_vonalak(vonalak):
     tmp = len(vonalak)
     i = 0
     for vonal in vonalak:
-        Pont(vonal[0]).new2(Pont(vonal[1]).hely)
+        Pont(vonal[0]).new2(Pont(vonal[1]).poz)
         i += 1
         print('Betöltve: ' + str(i//tmp*100) + '%', end='\r')
+
+def kord_igazitas(poz : float, vonalak : list):
+    USAGE = False
+    for vonal in vonalak:
+        tav = tavolsag(poz,vonal[0])
+        if tav < Default.KOR_SIZE:
+            poz = vonal[0]
+            USAGE = True
+        tav = tavolsag(poz,vonal[1])
+        if tav < Default.KOR_SIZE:
+            poz = vonal[1]
+            USAGE = True
+    return poz, USAGE
