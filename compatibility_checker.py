@@ -6,6 +6,8 @@ version = version[0] + '.' + version[1]
 print('Python version: ' + version)
 
 if version == '3.11':
-    print('\n!!!WARNING!!!\nThis Python version (3.11) is not supported!\nUse the Python 3.10 to running!')
+    print('\n!!!WARNING!!!\n\
+          This Python version (3.11) is not supported!\n\
+          Use the Python 3.10 to running!')
     sleep(5)
     exit()

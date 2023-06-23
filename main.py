@@ -20,16 +20,14 @@ def main(dict = {}, v = [], openedFileName = None):
     pygame.init()
     X1, Y1 = SCREEN_SIZE
     tmpX, tmpY = Default.MONITOR_MODE
-    print(Default.MONITOR_MODE)
+    print('Monitor mode:', Default.MONITOR_MODE)
     felulet_meret_x = X1 + tmpX
     felulet_meret_y = Y1 + tmpY
     del tmpX
     del tmpY
 
-    print(SCREEN_SIZE)
-    print((felulet_meret_x, felulet_meret_y))
-    print('X1:', X1)
-    print('Y1:', Y1)
+    print('Screen size:', SCREEN_SIZE)
+    print('Window size:', (felulet_meret_x, felulet_meret_y))
 
     fo_felulet = pygame.display.set_mode((felulet_meret_x,felulet_meret_y))
     if openedFileName == None:
@@ -91,7 +89,7 @@ def main(dict = {}, v = [], openedFileName = None):
                 exit()
             elif event.type == pygame.KEYDOWN:
                 key = int(event.dict['key'])
-                print(key, type(key))
+                #print(key, type(key))
                 if key == 27:# Az Escape billentyű
                     saveProjekt(infosDict, vonalak)
                     exit()
